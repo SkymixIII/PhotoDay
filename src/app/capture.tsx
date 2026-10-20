@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Muted, Screen, Title } from '../components/ui';
@@ -110,7 +110,9 @@ export default function Capture() {
           onPress={takePicture}
           disabled={!cameraReady || busy}
           style={[styles.shutter, (!cameraReady || busy) && { opacity: 0.5 }]}
-        />
+        >
+          {busy && <ActivityIndicator color="#fff" />}
+        </Pressable>
       </SafeAreaView>
     </View>
   );
@@ -120,7 +122,17 @@ const styles = StyleSheet.create({
   dark: { flex: 1, backgroundColor: '#000' },
   overlay: { flex: 1, justifyContent: 'space-between', alignItems: 'center', padding: 20 },
   close: { color: '#fff', fontSize: 28, alignSelf: 'flex-start' },
-  shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 6, borderColor: '#fff', marginBottom: 20 },
+  shutter: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 6,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   eyeLine: {
     position: 'absolute',
     top: '42%',
