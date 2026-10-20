@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Muted, Screen, Title } from '../components/ui';
@@ -23,11 +23,12 @@ export default function Capture() {
   const [permission, requestPermission] = useCameraPermissions();
   const [shot, setShot] = useState<Shot | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
 
   if (!permission) return <Screen />;
   if (!permission.granted) {
     return (
-      <Screen>
+      <Screen safeTop>
         <Title>Accès à la caméra</Title>
         <Muted>PhotoDay a besoin de la caméra frontale pour ton selfie du jour.</Muted>
         <Button title="Autoriser" onPress={requestPermission} />
@@ -37,17 +38,18 @@ export default function Capture() {
   }
 
   async function takePicture() {
-    if (!camera.current || busy) return;
+    if (!camera.current || !cameraReady || busy) return;
     setBusy(true);
     try {
       const photo = await camera.current.takePictureAsync({ quality: 1 });
+      if (!photo) throw new Error("La caméra n'a pas renvoyé de photo");
       // Resize first so the stored file is light and orientation is baked in.
       const rendered = await ImageManipulator.manipulate(photo.uri).resize({ width: STORED_WIDTH }).renderAsync();
       const saved = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
       const eyes = await detectEyes(saved.uri);
       setShot({ uri: saved.uri, width: saved.width, height: saved.height, eyes });
     } catch (e) {
-      Alert.alert('Oups', String(e));
+      Alert.alert('Impossible de prendre la photo', e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -60,7 +62,7 @@ export default function Capture() {
       await uploadSelfie({ userId, day: dayKey(), ...shot });
       router.back();
     } catch (e) {
-      Alert.alert("Échec de l'envoi", String(e));
+      Alert.alert("Échec de l'envoi", e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -89,7 +91,14 @@ export default function Capture() {
 
   return (
     <View style={styles.dark}>
-      <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="front" mirror />
+      <CameraView
+        ref={camera}
+        style={StyleSheet.absoluteFill}
+        facing="front"
+        mirror
+        onCameraReady={() => setCameraReady(true)}
+        onMountError={(e) => Alert.alert('Caméra indisponible', e.message)}
+      />
       {/* Guide: put your eyes on the line, like every other day. */}
       <View pointerEvents="none" style={styles.eyeLine} />
       <SafeAreaView style={styles.overlay}>
@@ -99,8 +108,11 @@ export default function Capture() {
         <Pressable
           accessibilityLabel="Prendre la photo"
           onPress={takePicture}
-          style={[styles.shutter, busy && { opacity: 0.5 }]}
-        />
+          disabled={!cameraReady || busy}
+          style={[styles.shutter, (!cameraReady || busy) && { opacity: 0.5 }]}
+        >
+          {busy && <ActivityIndicator color="#fff" />}
+        </Pressable>
       </SafeAreaView>
     </View>
   );
@@ -110,7 +122,17 @@ const styles = StyleSheet.create({
   dark: { flex: 1, backgroundColor: '#000' },
   overlay: { flex: 1, justifyContent: 'space-between', alignItems: 'center', padding: 20 },
   close: { color: '#fff', fontSize: 28, alignSelf: 'flex-start' },
-  shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 6, borderColor: '#fff', marginBottom: 20 },
+  shutter: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 6,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   eyeLine: {
     position: 'absolute',
     top: '42%',
