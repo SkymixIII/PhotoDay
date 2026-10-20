@@ -32,7 +32,7 @@
           "barcodeScannerEnabled": false
         }
       ],
-      "expo-notifications"
+      ["expo-notifications", { "enableRemoteNotifications": false }]
     ]
   }
 }

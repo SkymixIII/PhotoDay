@@ -53,6 +53,21 @@ un groupe avec lui (règles RLS dans la migration).
    - ou en local : `npm run ios` / `npm run android`.
 5. `npm start` puis ouvrir l'appli de dev sur le téléphone.
 
+### Sur iPhone avec un Mac (gratuit, sans compte développeur payant)
+
+1. Installer Xcode (App Store), l'ouvrir une fois, puis `brew install cocoapods`.
+2. Xcode > Settings > Accounts : ajouter son identifiant Apple (crée une « Personal Team » gratuite).
+3. Brancher l'iPhone en USB, accepter « Faire confiance », puis activer
+   Réglages > Confidentialité et sécurité > **Mode développeur** (l'iPhone redémarre).
+4. `npx expo run:ios --device` et choisir l'iPhone. Si Xcode demande une équipe de signature :
+   ouvrir `ios/PhotoDay.xcworkspace`, onglet *Signing & Capabilities*, choisir la Personal Team
+   (et changer le Bundle Identifier s'il est déjà pris).
+5. Au premier lancement : Réglages > Général > VPN et gestion de l'appareil > faire confiance au développeur.
+
+Avec un compte gratuit, l'appli expire au bout de 7 jours : relancer l'étape 4.
+Les notifications push distantes sont désactivées pour que la signature gratuite fonctionne
+(le rappel quotidien est une notification locale, il marche quand même).
+
 Tests et vérification des types : `npm test` et `npm run typecheck`.
 
 ## Pistes suivantes
