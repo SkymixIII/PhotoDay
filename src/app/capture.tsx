@@ -23,11 +23,12 @@ export default function Capture() {
   const [permission, requestPermission] = useCameraPermissions();
   const [shot, setShot] = useState<Shot | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
 
   if (!permission) return <Screen />;
   if (!permission.granted) {
     return (
-      <Screen>
+      <Screen safeTop>
         <Title>Accès à la caméra</Title>
         <Muted>PhotoDay a besoin de la caméra frontale pour ton selfie du jour.</Muted>
         <Button title="Autoriser" onPress={requestPermission} />
@@ -37,17 +38,18 @@ export default function Capture() {
   }
 
   async function takePicture() {
-    if (!camera.current || busy) return;
+    if (!camera.current || !cameraReady || busy) return;
     setBusy(true);
     try {
       const photo = await camera.current.takePictureAsync({ quality: 1 });
+      if (!photo) throw new Error("La caméra n'a pas renvoyé de photo");
       // Resize first so the stored file is light and orientation is baked in.
       const rendered = await ImageManipulator.manipulate(photo.uri).resize({ width: STORED_WIDTH }).renderAsync();
       const saved = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
       const eyes = await detectEyes(saved.uri);
       setShot({ uri: saved.uri, width: saved.width, height: saved.height, eyes });
     } catch (e) {
-      Alert.alert('Oups', String(e));
+      Alert.alert('Impossible de prendre la photo', e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -60,7 +62,7 @@ export default function Capture() {
       await uploadSelfie({ userId, day: dayKey(), ...shot });
       router.back();
     } catch (e) {
-      Alert.alert("Échec de l'envoi", String(e));
+      Alert.alert("Échec de l'envoi", e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -89,7 +91,14 @@ export default function Capture() {
 
   return (
     <View style={styles.dark}>
-      <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="front" mirror />
+      <CameraView
+        ref={camera}
+        style={StyleSheet.absoluteFill}
+        facing="front"
+        mirror
+        onCameraReady={() => setCameraReady(true)}
+        onMountError={(e) => Alert.alert('Caméra indisponible', e.message)}
+      />
       {/* Guide: put your eyes on the line, like every other day. */}
       <View pointerEvents="none" style={styles.eyeLine} />
       <SafeAreaView style={styles.overlay}>
@@ -99,7 +108,8 @@ export default function Capture() {
         <Pressable
           accessibilityLabel="Prendre la photo"
           onPress={takePicture}
-          style={[styles.shutter, busy && { opacity: 0.5 }]}
+          disabled={!cameraReady || busy}
+          style={[styles.shutter, (!cameraReady || busy) && { opacity: 0.5 }]}
         />
       </SafeAreaView>
     </View>

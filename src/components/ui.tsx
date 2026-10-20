@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const colors = {
   bg: '#FFFFFF',
@@ -11,7 +12,15 @@ export const colors = {
   danger: '#DC2626',
 };
 
-export function Screen({ children }: { children?: ReactNode }) {
+/** Pass `safeTop` on screens without a navigation header (notch / Dynamic Island). */
+export function Screen({ children, safeTop = false }: { children?: ReactNode; safeTop?: boolean }) {
+  if (safeTop) {
+    return (
+      <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
+        {children}
+      </SafeAreaView>
+    );
+  }
   return <View style={styles.screen}>{children}</View>;
 }
 

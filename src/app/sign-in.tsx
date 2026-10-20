@@ -32,7 +32,7 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen>
+      <Screen safeTop>
         <Title>PhotoDay 📸</Title>
         <Muted>Un selfie par jour, partagé avec tes amis. À la fin du mois, ton timelapse.</Muted>
         <Input

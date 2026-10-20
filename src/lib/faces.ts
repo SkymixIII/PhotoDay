@@ -7,11 +7,18 @@ import { normalizeEyes, type Eyes } from './alignment';
  * (Google ML Kit on both iOS and Android). Returns null if no face is found.
  */
 export async function detectEyes(imageUri: string): Promise<Eyes | null> {
-  const faces = await FaceDetection.detect(imageUri, {
-    performanceMode: 'accurate',
-    landmarkMode: 'all',
-    minFaceSize: 0.2,
-  });
+  let faces;
+  try {
+    faces = await FaceDetection.detect(imageUri, {
+      performanceMode: 'accurate',
+      landmarkMode: 'all',
+      minFaceSize: 0.2,
+    });
+  } catch (e) {
+    // A detection failure must never block the daily selfie: it is just not aligned.
+    console.warn('Face detection failed', e);
+    return null;
+  }
 
   const face = faces
     .filter((f) => f.landmarks?.leftEye && f.landmarks?.rightEye)
