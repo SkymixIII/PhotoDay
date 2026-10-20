@@ -4,26 +4,30 @@ import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button, Input, Muted, Screen, Title } from '../components/ui';
 import { supabase } from '../lib/supabase';
 
-/** Passwordless sign-in: email -> 6-digit code. */
+const MIN_PASSWORD = 6;
+
+/** Email + password sign-in; "Créer un compte" signs up with the same fields. */
 export default function SignIn() {
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState<'in' | 'up' | null>(null);
 
-  async function sendCode() {
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
-    setBusy(false);
-    if (error) Alert.alert('Erreur', error.message);
-    else setCodeSent(true);
+  const ready = email.includes('@') && password.length >= MIN_PASSWORD;
+
+  async function signIn() {
+    setBusy('in');
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setBusy(null);
+    if (error) Alert.alert('Connexion impossible', error.message);
   }
 
-  async function verify() {
-    setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' });
-    setBusy(false);
-    if (error) Alert.alert('Code invalide', error.message);
+  async function signUp() {
+    setBusy('up');
+    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+    setBusy(null);
+    if (error) Alert.alert('Inscription impossible', error.message);
+    // No session means Supabase still requires email confirmation.
+    else if (!data.session) Alert.alert('Presque fini', 'Confirme ton adresse avec le lien reçu par email, puis connecte-toi.');
   }
 
   return (
@@ -38,17 +42,16 @@ export default function SignIn() {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
-          editable={!codeSent}
         />
-        {codeSent ? (
-          <>
-            <Input placeholder="Code reçu par email" keyboardType="number-pad" value={code} onChangeText={setCode} />
-            <Button title="Se connecter" onPress={verify} loading={busy} disabled={code.trim().length < 6} />
-            <Button title="Changer d'email" variant="ghost" onPress={() => setCodeSent(false)} />
-          </>
-        ) : (
-          <Button title="Recevoir un code" onPress={sendCode} loading={busy} disabled={!email.includes('@')} />
-        )}
+        <Input
+          placeholder={`Mot de passe (${MIN_PASSWORD} caractères min.)`}
+          secureTextEntry
+          autoComplete="password"
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Button title="Se connecter" onPress={signIn} loading={busy === 'in'} disabled={!ready || busy !== null} />
+        <Button title="Créer un compte" variant="ghost" onPress={signUp} loading={busy === 'up'} disabled={!ready || busy !== null} />
       </Screen>
     </KeyboardAvoidingView>
   );

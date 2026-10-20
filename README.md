@@ -7,7 +7,7 @@ Appli iOS + Android en **Expo (React Native) + TypeScript**, backend **Supabase*
 
 ## Fonctionnalités (MVP)
 
-- Connexion sans mot de passe (code reçu par email).
+- Connexion par email + mot de passe.
 - Selfie du jour avec la caméra frontale, un par jour (on peut le reprendre dans la journée).
 - Détection des yeux **sur le téléphone** (Google ML Kit) au moment de la prise de vue ;
   les coordonnées des yeux sont enregistrées avec la photo.
@@ -21,7 +21,7 @@ Appli iOS + Android en **Expo (React Native) + TypeScript**, backend **Supabase*
 ```
 src/
   app/                  écrans (Expo Router)
-    sign-in.tsx         connexion par code email
+    sign-in.tsx         connexion / création de compte (email + mot de passe)
     index.tsx           accueil : selfie du jour + mes groupes
     capture.tsx         caméra, détection des yeux, envoi
     groups/new.tsx      créer / rejoindre un groupe
@@ -44,7 +44,8 @@ un groupe avec lui (règles RLS dans la migration).
 
 1. **Supabase** : créer un projet sur [supabase.com](https://supabase.com), puis appliquer
    `supabase/migrations/20261020000000_init.sql` (éditeur SQL ou `supabase db push`).
-   Dans *Authentication > Email*, garder la connexion par OTP activée.
+   Dans *Authentication > Sign In / Providers > Email*, désactiver **Confirm email**
+   (sinon Supabase doit envoyer un email de confirmation à chaque inscription).
 2. **Variables** : copier `.env.example` en `.env.local` et remplir l'URL et la clé `anon`.
 3. **Dépendances** : `npm install`.
 4. **Build de développement** (la détection de visage est un module natif, donc Expo Go
